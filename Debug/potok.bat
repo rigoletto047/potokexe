@@ -1,0 +1,2 @@
+potokexe_ex1.exe
+pause
