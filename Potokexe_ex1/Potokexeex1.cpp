@@ -5,7 +5,6 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 
-
 #include <windows.h>
 #include <winbase.h>
 #include <filesystem>
@@ -20,8 +19,12 @@
 #include "./inc/sundries.h"
 #include "./inc/buf.h"
 #include "./inc/var.h"
+#include "./inc/library_k.h"
+
 
 #define D12 12
+#define MIN(x,y) (((x)<(y))?(x):(y))
+
 
 using namespace std;
 

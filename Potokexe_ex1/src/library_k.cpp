@@ -9,6 +9,7 @@
 #include <math.h>
 #include "dsp_param.h"
 #include <complex>
+#include <ctime>
 
 //void Graf(complex<double> *s,long N0,double FD,int F,char *text,double x1,double x2,...);
 #include "Bsp_common.h"
@@ -21,6 +22,7 @@
 #include "my_structs.h"
 #include <windows.h>
 #include <stdio.h>
+#include "sundries.h"
 //#include "Ohistka.h"
 
 ////////////////////////////////////#include "Init_Soprov.h"
@@ -78,7 +80,7 @@ int mes[4];
 extern float test_cjat_hm1,test_cjat_hm2,test_cjat_mono1,test_cjat_mono2,test_bok_hm1,test_bok_hm2,test_bok_mono1,test_bok_mono2,test_mtd,test_nak;
 
 extern complex<short int> test_sig[500];
-extern complex<float> KU_HM_NU[N],KU_HM_VU[N],KU_MONO_NU[M],KU_MONO_VU[M];
+extern complex<float> KU_HM_NU[L_LEN],KU_HM_VU[L_LEN],KU_MONO_NU[M_LEN],KU_MONO_VU[M_LEN];
 extern int Period[10];
 extern complex<float> Filter_MTD[2*10*nK*Lmax];
 
@@ -135,18 +137,18 @@ void OpenFileMap( void )
     // Формирование файла для отображения данных в режиме 4
     hFileMapStatus = CreateFileMapping( (HANDLE)INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(Bsp_Status), "Bsp_Status" );
     if( hFileMapStatus == NULL )
-     {
-        SetCurrentDir(ProgrammPath);
-	WritePrivateProfileString( "Bsp", "Message", "FileMapStatus Error", fname );
-	return;
-     }
-
-    lpViewStatus = MapViewOfFile( hFileMapStatus, FILE_MAP_READ|FILE_MAP_WRITE, 0, 0, 0 );
+			{
+				//SetCurrentDir(ProgrammPath);
+				WritePrivateProfileString( "Bsp", "Message", "FileMapStatus Error", fname );
+				return;
+			}
+	
+		lpViewStatus = MapViewOfFile( hFileMapStatus, FILE_MAP_READ|FILE_MAP_WRITE, 0, 0, 0 );
     if( lpViewStatus == NULL )
      {
      	CloseHandle( hFileMapStatus );
      	hFileMapStatus = NULL;
-        SetCurrentDir(ProgrammPath);
+      //SetCurrentDir(ProgrammPath);
      	WritePrivateProfileString( "Bsp", "Message", "lpViewStatus Error", fname );
      	return;
      }
@@ -157,19 +159,19 @@ void OpenFileMap( void )
     hFileMap = CreateFileMapping( (HANDLE)INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, 50*sizeof(float), "Bsp_Test" );
     if( hFileMap == NULL )
      {
-        SetCurrentDir(ProgrammPath);
-	WritePrivateProfileString( "Bsp", "Message", "FileMap Error", fname );
-	return;
+        //SetCurrentDir(ProgrammPath);
+				WritePrivateProfileString( "Bsp", "Message", "FileMap Error", fname );
+				return;
      }
 
     lpView = MapViewOfFile( hFileMap, FILE_MAP_READ|FILE_MAP_WRITE, 0, 0, 0 );
     if( lpView == NULL )
      {
-     	CloseHandle( hFileMap );
-     	hFileMap = NULL;
-        SetCurrentDir(ProgrammPath);
-     	WritePrivateProfileString( "Bsp", "Message", "lpView Error", fname );
-     	return;
+     		CloseHandle( hFileMap );
+     		hFileMap = NULL;
+				//SetCurrentDir(ProgrammPath);
+				WritePrivateProfileString( "Bsp", "Message", "lpView Error", fname );
+     		return;
      }
 
     test_buf =(float*) lpView;
@@ -184,7 +186,7 @@ void OpenFileMap( void )
                 {
 	                CloseHandle( hFileMapBuffer2 );
 	                hFileMapBuffer2 = NULL;
-                        SetCurrentDir(ProgrammPath);
+                  // SetCurrentDir(ProgrammPath);
 	                WritePrivateProfileString( "Bsp", "Message", "lpViewStatus Error 1", fname );
 	        }
 	        else
@@ -192,7 +194,7 @@ void OpenFileMap( void )
         }
         else
         {
-                SetCurrentDir(ProgrammPath);
+                //SetCurrentDir(ProgrammPath);
        	        WritePrivateProfileString( "Bsp", "Message", "lpViewStatus Error 2", fname );
         }
     ////////////////////////////
@@ -201,49 +203,49 @@ void OpenFileMap( void )
 // Формирование файла для вывода в режиме 0 или 1
     hFileMapStatus2 = CreateFileMapping( (HANDLE)INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(Bsp_Status), "Bsp_Status2" );
     if( hFileMapStatus2 == NULL )
-    {
-        SetCurrentDir(ProgrammPath);
-		WritePrivateProfileString( "Bsp", "Message", "FileMapStatus2 Error", fname );
-		return;
-	}
+			{
+				//SetCurrentDir(ProgrammPath);
+				WritePrivateProfileString( "Bsp", "Message", "FileMapStatus2 Error", fname );
+				return;
+			}
     lpViewStatus2 = MapViewOfFile( hFileMapStatus2, FILE_MAP_READ|FILE_MAP_WRITE, 0, 0, 0 );
     if( lpViewStatus2 == NULL )
-    {
-		CloseHandle( hFileMapStatus2 );
-		hFileMapStatus2 = NULL;
-        SetCurrentDir(ProgrammPath);
-		WritePrivateProfileString( "Bsp", "Message", "lpViewStatus2 Error", fname );
-		return;
-    }
+			{
+			CloseHandle( hFileMapStatus2 );
+			hFileMapStatus2 = NULL;
+			//SetCurrentDir(ProgrammPath);
+			WritePrivateProfileString( "Bsp", "Message", "lpViewStatus2 Error", fname );
+			return;
+			}
 
 	status2 = (PBsp_Status)lpViewStatus2;
 	BSP_RESET( status2 );
         //if(rejim<4)
         {
 	        hFileMapBuffer = CreateFileMapping( (HANDLE)INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0,
-			(BUFFER_SIZE * sizeof(Buf_HM_MONO)), "Bsp_Buffer_new" );
+					(BUFFER_SIZE * sizeof(Buf_HM_MONO)), "Bsp_Buffer_new" );
 	        if( hFileMapBuffer != NULL )
-                {
-		        lpViewBuffer = MapViewOfFile( hFileMapBuffer, FILE_MAP_WRITE, 0, 0, 0 );
-		        if( lpViewBuffer == NULL )
-                        {
-			        CloseHandle( hFileMapBuffer );
-			        hFileMapBuffer = NULL;
-                                SetCurrentDir(ProgrammPath);
-			        WritePrivateProfileString( "Bsp", "Message", "lpViewBuffer == NULL", fname );
-		        }
-		        else
-			        buffer = (Buf_HM_MONO *)lpViewBuffer;
-	        }
+            {
+							lpViewBuffer = MapViewOfFile( hFileMapBuffer, FILE_MAP_WRITE, 0, 0, 0 );
+							if( lpViewBuffer == NULL )
+								{
+									CloseHandle( hFileMapBuffer );
+									hFileMapBuffer = NULL;
+									//SetCurrentDir(ProgrammPath);
+									WritePrivateProfileString( "Bsp", "Message", "lpViewBuffer == NULL", fname );
+								}
+							else
+								buffer = (Buf_HM_MONO *)lpViewBuffer;
+						}
 	        else
-                {
-                        SetCurrentDir(ProgrammPath);
-		        WritePrivateProfileString( "Bsp", "Message", "hFileMapBuffer == NULL", fname );
-	        }
+            {	
+							//SetCurrentDir(ProgrammPath);
+							WritePrivateProfileString( "Bsp", "Message", "hFileMapBuffer == NULL", fname );
+						}
 
 
         }
-        SetCurrentDir(ProgrammPath);
+        //SetCurrentDir(ProgrammPath);
 	WritePrivateProfileString( "Bsp", "Message", "FileMap Ok", fname );
 
     // Создание процесса для проверки выхода из карты памяти
@@ -293,7 +295,7 @@ void CloseFileMap( void )
 		CloseHandle( hFileMapBuffer2 );
 	ReleaseMutex( hMutex );
 	CloseHandle( hMutex );
-    SetCurrentDir(ProgrammPath);
+    //SetCurrentDir(ProgrammPath);
 	WritePrivateProfileString( "Bsp", "Message", "CloseFileMap Ok 7", fname );
   //SendMessage(priem->Handle,WM_CLOSE,0,0);
     //priem->Close();
@@ -305,181 +307,181 @@ void CloseFileMap( void )
 /*
         // Инициализация платы и запуск сигнальных процессоров на выполнение
 */
-int Ini_Start(char *file)
-{
-// Инициализация платы и запуск сигнальных процессоров на выполнение
-    S32 err;
-    S32 pNum;
-    char ss[256];
-    U32			openMode;
-    U32 ite;
-    SetCurrentDir(ProgrammPath);
-    err=BRD_cleanup();
-
-    //BRD_reset(handle,0);
-    //BRD_reset(handle,1);
-            
-    // Инициализация платы
-    err = BRD_initEx( BRDinit_FILE_KNOWN, (ProgrammPath+"brd.ini").c_str(), (ProgrammPath+"log.ini").c_str(), &pNum );
-        /*
-        Замечание
-        Переменная pNum типа указатель должна быть размещена в памяти,
-        а не в регистре. Чтобы это было так, нужно создать ее в виде
-        массива из одного элемента pNum[1] или передавать адрес переменной
-        */
-    if(BRD_errcmp(err,BRDerr_OK))
-        ;//MessageBox(NULL,"Плата успешно проинициализирована","Message",MB_OK);
-    else
-    {
-        if( BRD_errcmp(err,BRDerr_NONE_DEVICE) )
-        {
-            MessageBox(NULL,"Не обнаружено базового модуля","Error",MB_OK);
-            return -1;
-        }
-        else  if(BRD_errcmp(err,BRDerr_BAD_INI_FILE))
-        {
-            MessageBox(NULL,"Невозможно открыть файл инициализации","Error",MB_OK);
-            return -1;
-        }
-        else
-        {
-            MessageBox(NULL,"Ошибка открытия платы","Error",MB_OK);
-            return -1;
-        }
-    }
-    // Поиск всех базовых модулей
-    U32  lidArray[1], itemReal, g_lid;
-    BRD_lidList( lidArray, 1, &itemReal );
-    if( itemReal==0 )
-    {
-        MessageBox(NULL,"Не обнаружено базового модуля","Error",MB_OK);
-        return -1;
-    }
-    g_lid = lidArray[0];// Определение номера платы
-    // Открытие платы
-    handle = BRD_open( g_lid, BRDopen_EXCLUSIVE, &openMode );
-    if(handle<=0)
-    {
-        sprintf(ss, " ERROR: Нельзя открыть устройство (LID=%d)", g_lid );
-        MessageBox(NULL,ss,"Error",MB_OK);
-        return -1;
-    }
-    err=BRD_reset(handle,0);
-    if(err<0)
-    {
-        MessageBox(NULL,"Невозможен сброс платы","Error",MB_OK);
-        return -1;
-    }
-    // Загрузка ПЛИСС
-    GetPrivateProfileString( "Файлы", "Программа ПЛИС", "cd416s54.h10",ss,256, fini );
-    err=BRD_puLoad(handle,0x100,ss,&ite);
-    if(!BRD_errcmp(err,BRDerr_OK))
-    {
-        if(BRD_errcmp(err,BRDerr_BAD_ID))
-            MessageBox(NULL,"Неверный идентификатор","Error",MB_OK);
-        if(BRD_errcmp(err,BRDerr_BAD_FILE))
-            MessageBox(NULL,"Файл недоступен","Error",MB_OK);
-        if(BRD_errcmp(err,BRDerr_HW_ERROR))
-            MessageBox(NULL,"Аппаратная ошибка","Error",MB_OK);
-        //BRD_cleanup();
-        return -1;
-    }
-    if(ite==0)
-    {
-        MessageBox(NULL,"ПЛИС не загружена","Error",MB_OK);
-        //BRD_cleanup();
-        return -1;
-    }
-    //BRD_SigList Prer[10];
-    //err=BRD_signalList(handle,0,&Prer[0],10,&itemReal);
-    // Загрузка программы в сигнальный процессор
-    err=BRD_load( handle, 0, file, 0, NULL );
-    if(BRD_errcmp(err,BRDerr_OK))
-    ;   //MessageBox(NULL,"Программа загружена","Message",MB_OK);
-    else
-    {
-        //BRD_cleanup();
-        MessageBox(NULL,"Ошибки при загрузке программы","Message",MB_OK);
-        return -1;
-    }
-
-    // Запуск программы на выполнение
-    err=BRD_start( handle, 0 );
-    if(BRD_errcmp(err,BRDerr_OK))
-    ;
-    else if(BRD_errcmp(err,BRDerr_BAD_HANDLE))
-        MessageBox(NULL,"Неправильный дескриптор","Error",MB_OK);
-    else  if(BRD_errcmp(err,BRDerr_CLOSED_HANDLE))
-        MessageBox(NULL,"Дескриптор неоткрытого базового модуля","Error",MB_OK);
-    if(!BRD_errcmp(err,BRDerr_OK))
-    {
-        MessageBox(NULL,"Невозможно стартовать","Error",MB_OK);
-        //BRD_cleanup();
-        return -1;
-    }
-    return 0;
-}
-
-
-//////////////////////////////////////////////////////////
-/*
-        // Чтение файла, содержащего программу ДДС
-*/
-int     ReadPrgFile( char *fileName, U32 *dst, S32 size )
-{
-// Чтение файла, содержащего программу ДДС
-    FILE    *stream;
-	U32		page, adr, data;
-	S32		ind=0;
-    char    *endptr;
-    char    g_str[256];
-    float x;
-
-	stream = fopen( fileName, "rt" );
-	 
-
-	if(stream==NULL)
-	{
-		//sprintf( "*** Нельзя открыть PrgFile - '%s'\n", fileName );
-		return -1;
-	}
-
-	//printf( "\n****** Open PrgFile - '%s'******\n", fileName );
-	//printf( "Reading PrgFile...\n");
-
-        fgets( g_str, 80, stream );
-        fgets( g_str, 80, stream );
-        fgets( g_str, 80, stream );
-        sscanf(g_str,"Decimation Channel0= %f",&x);
-        dsp_param.aDECIMATION=(int)x;
+//int Ini_Start(char *file)
+//{
+//// Инициализация платы и запуск сигнальных процессоров на выполнение
+//    S32 err;
+//    S32 pNum;
+//    char ss[256];
+//    U32			openMode;
+//    U32 ite;
+//    SetCurrentDir(ProgrammPath);
+//    err=BRD_cleanup();
+//
+//    //BRD_reset(handle,0);
+//    //BRD_reset(handle,1);
+//            
+//    // Инициализация платы
+//    err = BRD_initEx( BRDinit_FILE_KNOWN, (ProgrammPath+"brd.ini").c_str(), (ProgrammPath+"log.ini").c_str(), &pNum );
+//        /*
+//        Замечание
+//        Переменная pNum типа указатель должна быть размещена в памяти,
+//        а не в регистре. Чтобы это было так, нужно создать ее в виде
+//        массива из одного элемента pNum[1] или передавать адрес переменной
+//        */
+//    if(BRD_errcmp(err,BRDerr_OK))
+//        ;//MessageBox(NULL,"Плата успешно проинициализирована","Message",MB_OK);
+//    else
+//    {
+//        if( BRD_errcmp(err,BRDerr_NONE_DEVICE) )
+//        {
+//            MessageBox(NULL,"Не обнаружено базового модуля","Error",MB_OK);
+//            return -1;
+//        }
+//        else  if(BRD_errcmp(err,BRDerr_BAD_INI_FILE))
+//        {
+//            MessageBox(NULL,"Невозможно открыть файл инициализации","Error",MB_OK);
+//            return -1;
+//        }
+//        else
+//        {
+//            MessageBox(NULL,"Ошибка открытия платы","Error",MB_OK);
+//            return -1;
+//        }
+//    }
+//    // Поиск всех базовых модулей
+//    U32  lidArray[1], itemReal, g_lid;
+//    BRD_lidList( lidArray, 1, &itemReal );
+//    if( itemReal==0 )
+//    {
+//        MessageBox(NULL,"Не обнаружено базового модуля","Error",MB_OK);
+//        return -1;
+//    }
+//    g_lid = lidArray[0];// Определение номера платы
+//    // Открытие платы
+//    handle = BRD_open( g_lid, BRDopen_EXCLUSIVE, &openMode );
+//    if(handle<=0)
+//    {
+//        sprintf(ss, " ERROR: Нельзя открыть устройство (LID=%d)", g_lid );
+//        MessageBox(NULL,ss,"Error",MB_OK);
+//        return -1;
+//    }
+//    err=BRD_reset(handle,0);
+//    if(err<0)
+//    {
+//        MessageBox(NULL,"Невозможен сброс платы","Error",MB_OK);
+//        return -1;
+//    }
+//    // Загрузка ПЛИСС
+//    GetPrivateProfileString( "Файлы", "Программа ПЛИС", "cd416s54.h10",ss,256, fini );
+//    err=BRD_puLoad(handle,0x100,ss,&ite);
+//    if(!BRD_errcmp(err,BRDerr_OK))
+//    {
+//        if(BRD_errcmp(err,BRDerr_BAD_ID))
+//            MessageBox(NULL,"Неверный идентификатор","Error",MB_OK);
+//        if(BRD_errcmp(err,BRDerr_BAD_FILE))
+//            MessageBox(NULL,"Файл недоступен","Error",MB_OK);
+//        if(BRD_errcmp(err,BRDerr_HW_ERROR))
+//            MessageBox(NULL,"Аппаратная ошибка","Error",MB_OK);
+//        //BRD_cleanup();
+//        return -1;
+//    }
+//    if(ite==0)
+//    {
+//        MessageBox(NULL,"ПЛИС не загружена","Error",MB_OK);
+//        //BRD_cleanup();
+//        return -1;
+//    }
+//    //BRD_SigList Prer[10];
+//    //err=BRD_signalList(handle,0,&Prer[0],10,&itemReal);
+//    // Загрузка программы в сигнальный процессор
+//    err=BRD_load( handle, 0, file, 0, NULL );
+//    if(BRD_errcmp(err,BRDerr_OK))
+//    ;   //MessageBox(NULL,"Программа загружена","Message",MB_OK);
+//    else
+//    {
+//        //BRD_cleanup();
+//        MessageBox(NULL,"Ошибки при загрузке программы","Message",MB_OK);
+//        return -1;
+//    }
+//
+//    // Запуск программы на выполнение
+//    err=BRD_start( handle, 0 );
+//    if(BRD_errcmp(err,BRDerr_OK))
+//    ;
+//    else if(BRD_errcmp(err,BRDerr_BAD_HANDLE))
+//        MessageBox(NULL,"Неправильный дескриптор","Error",MB_OK);
+//    else  if(BRD_errcmp(err,BRDerr_CLOSED_HANDLE))
+//        MessageBox(NULL,"Дескриптор неоткрытого базового модуля","Error",MB_OK);
+//    if(!BRD_errcmp(err,BRDerr_OK))
+//    {
+//        MessageBox(NULL,"Невозможно стартовать","Error",MB_OK);
+//        //BRD_cleanup();
+//        return -1;
+//    }
+//    return 0;
+//}
 
 
-	//
-	// Search Register Area
-	//
-	while( !feof(stream) )
-	{
-        fgets( g_str, 80, stream );
-		if( 0 == strncmp( g_str, "Page Reg Val", 12 ) )
-			break;
-	}
-    while( 1 )
-    //while( !feof(stream) )
-    {
-        fgets( g_str, 80, stream );
-       	page = strtoul( g_str, &endptr, 0 );
-       	adr  = strtoul( endptr, &endptr, 0 );
-       	data = strtoul( endptr, &endptr, 0 );
-       	dst[ind] = ((page&0xff)<<16) | ((adr&0xff)<<8) | (data&0xff);
-		if( (ind>0) & (dst[ind] == dst[ind-1]) )
-			break;	// End of File
-        ind++;
-		if( ind>=size )
-			break;
-		
-    }
-	return	ind;
-}
+////////////////////////////////////////////////////////////
+///*
+//        // Чтение файла, содержащего программу ДДС
+//*/
+//int     ReadPrgFile( char *fileName, U32 *dst, S32 size )
+//{
+//// Чтение файла, содержащего программу ДДС
+//    FILE    *stream;
+//	U32		page, adr, data;
+//	S32		ind=0;
+//    char    *endptr;
+//    char    g_str[256];
+//    float x;
+//
+//	stream = fopen( fileName, "rt" );
+//	 
+//
+//	if(stream==NULL)
+//	{
+//		//sprintf( "*** Нельзя открыть PrgFile - '%s'\n", fileName );
+//		return -1;
+//	}
+//
+//	//printf( "\n****** Open PrgFile - '%s'******\n", fileName );
+//	//printf( "Reading PrgFile...\n");
+//
+//        fgets( g_str, 80, stream );
+//        fgets( g_str, 80, stream );
+//        fgets( g_str, 80, stream );
+//        sscanf(g_str,"Decimation Channel0= %f",&x);
+//        dsp_param.aDECIMATION=(int)x;
+//
+//
+//	//
+//	// Search Register Area
+//	//
+//	while( !feof(stream) )
+//	{
+//        fgets( g_str, 80, stream );
+//		if( 0 == strncmp( g_str, "Page Reg Val", 12 ) )
+//			break;
+//	}
+//    while( 1 )
+//    //while( !feof(stream) )
+//    {
+//        fgets( g_str, 80, stream );
+//       	page = strtoul( g_str, &endptr, 0 );
+//       	adr  = strtoul( endptr, &endptr, 0 );
+//       	data = strtoul( endptr, &endptr, 0 );
+//       	dst[ind] = ((page&0xff)<<16) | ((adr&0xff)<<8) | (data&0xff);
+//		if( (ind>0) & (dst[ind] == dst[ind-1]) )
+//			break;	// End of File
+//        ind++;
+//		if( ind>=size )
+//			break;
+//		
+//    }
+//	return	ind;
+//}
 
 
 //////////////////////////////////////////////////////////
@@ -502,7 +504,7 @@ int sagr(void)
     int k2,k3,k4;
     char imj_file_test_hm1[256],imj_file_test_hm2[256],imj_file_test_mono1[256],imj_file_test_mono2[256],
     imj_file_cjat_hm1[256],imj_file_cjat_hm2[256],imj_file_cjat_mono1[256],imj_file_cjat_mono2[256],imj_file_mtd[256];
-    AnsiString Nom_Kml;
+    string Nom_Kml;
 
     //double FD=1.56125e6;
     //int M0;long N0;
@@ -534,7 +536,7 @@ int sagr(void)
   // считываем номер комплекта
     dsp_param.Nomer_komplekta=GetPrivateProfileInt( "Параметры", "Номер комплекта", 1, fini );
     // В ЗАВИСИМОСТИ ОТ НОМЕРА КОМПЛЕКТА СЧИТЫВАЕМ ФАЙЛЫ ФИЛЬТРОВ
-    Section= "Файлы комплекта "+IntToStr(dsp_param.Nomer_komplekta);
+    Section= "Файлы комплекта "+ IntToStr(dsp_param.Nomer_komplekta);
     /*
     if (dsp_param.Nomer_komplekta!=GetPrivateProfileInt( "System", "SectorName", 1, frpu ) )
      {
@@ -1143,7 +1145,7 @@ int sagr(void)
             fclose(fq);fq=NULL;
         }
 
-        x3=1/sqrt(N);
+        x3=1/sqrt(L_LEN);
  // *******************************************************************************
     // ЗАГРУЖАЕМ Фильтр Сжатия - а что будет если имя неверно???
  // *******************************************************************************
@@ -1156,7 +1158,7 @@ int sagr(void)
                 MessageBox(NULL,imj_file_cjat_hm1,"Неверно имя файла фильтров сжатия HM1",MB_OK);
                 return 1;
             }
-            for(int i=0;i<N;i++)
+            for(int i=0;i<L_LEN;i++)
             {
                 fscanf(fq,"%lf%lf",&x1,&x2); //x1*=x3;x2*=x3;
                 KU_HM_NU[i]=complex<float>(x1,x2);
@@ -1169,7 +1171,7 @@ int sagr(void)
                 MessageBox(NULL,imj_file_cjat_hm2,"Неверно имя файла фильтров сжатия HM2",MB_OK);
                 return 1;
             }
-            for(int i=0;i<N;i++)
+            for(int i=0;i<L_LEN;i++)
             {
                 fscanf(fq,"%lf%lf",&x1,&x2);  //x1*=x3;x2*=x3;
                 KU_HM_VU[i]=complex<float>(x1,x2);
@@ -1182,8 +1184,8 @@ int sagr(void)
                 MessageBox(NULL,imj_file_cjat_mono1,"Неверно имя файла фильтров сжатия MONO1",MB_OK);
                 return 1;
             }
-            x3=1/sqrt(M);
-            for(int i=0;i<M;i++)
+            x3=1/sqrt(M_LEN);
+            for(int i=0;i<M_LEN;i++)
             {
                 fscanf(fq,"%lf%lf",&x1,&x2); //x1*=x3;x2*=x3;
                 KU_MONO_NU[i]=complex<float>(x1,x2);
@@ -1195,7 +1197,7 @@ int sagr(void)
                 MessageBox(NULL,imj_file_cjat_mono2,"Неверно имя файла фильтров сжатия MONO2",MB_OK);
                 return 1;
             }
-            for(int i=0;i<M;i++)
+            for(int i=0;i<M_LEN;i++)
             {
                 fscanf(fq,"%lf%lf",&x1,&x2); //x1*=x3;x2*=x3;
                 KU_MONO_VU[i]=complex<float>(x1,x2);
@@ -1245,7 +1247,7 @@ int sagr(void)
     ProgrammPath=ExtractFilePath(Application->ExeName);
     SetCurrentDir(ProgrammPath);
     ProgPath= ProgrammPath+ prog_ddc ;
-    items=ReadPrgFile(ProgPath.c_str() /*prog_ddc*/, g_aProgArray, sizeof(g_aProgArray)/sizeof(g_aProgArray[0] ));
+    // --- TODO  items=ReadPrgFile(ProgPath.c_str() /*prog_ddc*/, g_aProgArray, sizeof(g_aProgArray)/sizeof(g_aProgArray[0] ));
     if(items==-1)
     {
         sprintf(ss,"Нельзя открыть файл: %s",  prog_ddc);
@@ -1508,7 +1510,8 @@ int komandos(int kom_da) // функция передачи команды в процессор
     int mes[4],mes1[4];
     char ss[256];
     int err;
-    double tim;
+    //double tim;
+		time_t tim;
     float *y;
     y=(float*)mes;
     float z,z1;
@@ -1887,12 +1890,13 @@ strcpy(S[45],"Фиксация карты помех");
 //for(int i=0;i<2;i++)
 {
         //int mes1[4];
-    err=BRD_signalSend(handle,0,0);
+    // TODO err=BRD_signalSend(handle,0,0);
     //chet_err++;
-    if(BRD_errcmp(err,BRDerr_OK))
+    if(1)
+		// TODO  ----- if(BRD_errcmp(err,BRDerr_OK))
       {
          size=sizeof(mes);
-         BRD_putMsg(handle,0,mes ,&size,-1);
+				 // TODO  -----  BRD_putMsg(handle,0,mes ,&size,-1);
          //BRD_getMsg(handle,0,mes1 ,&size,-1);
          //for(int i=0;i<4;i++)
          //       mes[i]=0;
@@ -1905,7 +1909,8 @@ strcpy(S[45],"Фиксация карты помех");
       }
       Sleep(100);
 }
-tim=Now();mmm=mes[1];
+time(&tim);// =Now();
+mmm=mes[1];
 if(kmmm == 40)
 {
         if(mes[1]==1)

@@ -1,12 +1,12 @@
-#include <vcl.h>
+//#include <vcl.h>
 #include <stdio.h>
-#include "brd.h"
+//#include "brd.h"
 #include "Bsp_common.h"
 #include "library.h"
 #include "Options.h"
 #include "my_structs.h"
-#include "..\dsp\dsp_param.h"
-#include "..\dsp\buf.h"
+#include "dsp_param.h"
+#include "buf.h"
 #include <complex>
 using namespace std;
 //void bpf0(unsigned m,int mode,double t,complex<double> *x);
