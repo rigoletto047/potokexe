@@ -510,8 +510,9 @@ int sagr(void)
     //int M0;long N0;
     //M0=11;N0=1<<M0;
     //s1=new complex<double>[N0];
-    ProgrammPath=ExtractFilePath(Application->ExeName);
-    SetCurrentDir(ProgrammPath);
+		ProgrammPath = GetCurrentDirectoryMC();
+    //ProgrammPath=ExtractFilePath(Application->ExeName);
+    SetCurrentDirectoryA(ProgrammPath.c_str());
 
     // Óïðàâëåíèå îò êíîïîê èëè äèñòàíöèîííî
     //perekluh=!perekluh;
@@ -536,7 +537,7 @@ int sagr(void)
   // ñ÷èòûâàåì íîìåð êîìïëåêòà
     dsp_param.Nomer_komplekta=GetPrivateProfileInt( "Ïàðàìåòðû", "Íîìåð êîìïëåêòà", 1, fini );
     // Â ÇÀÂÈÑÈÌÎÑÒÈ ÎÒ ÍÎÌÅÐÀ ÊÎÌÏËÅÊÒÀ Ñ×ÈÒÛÂÀÅÌ ÔÀÉËÛ ÔÈËÜÒÐÎÂ
-    Section= "Ôàéëû êîìïëåêòà "+ IntToStr(dsp_param.Nomer_komplekta);
+    Section= "Ôàéëû êîìïëåêòà "+ std::to_string(dsp_param.Nomer_komplekta);
     /*
     if (dsp_param.Nomer_komplekta!=GetPrivateProfileInt( "System", "SectorName", 1, frpu ) )
      {
@@ -1244,9 +1245,13 @@ int sagr(void)
     // Çàãðóçêà ïðîãðàììû ÄÄÑ
  // *******************************************************************************
 
-    ProgrammPath=ExtractFilePath(Application->ExeName);
-    SetCurrentDir(ProgrammPath);
-    ProgPath= ProgrammPath+ prog_ddc ;
+    //ProgrammPath=ExtractFilePath(Application->ExeName);
+    //SetCurrentDir(ProgrammPath);
+    
+		ProgrammPath = GetCurrentDirectoryMC();
+		SetCurrentDirectoryA(ProgrammPath.c_str());
+		
+		ProgPath= ProgrammPath+ prog_ddc ;
     // --- TODO  items=ReadPrgFile(ProgPath.c_str() /*prog_ddc*/, g_aProgArray, sizeof(g_aProgArray)/sizeof(g_aProgArray[0] ));
     if(items==-1)
     {

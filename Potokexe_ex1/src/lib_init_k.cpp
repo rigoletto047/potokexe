@@ -2,12 +2,15 @@
 #include <stdio.h>
 //#include "brd.h"
 #include "Bsp_common.h"
-#include "library.h"
+#include "library_k.h"
 #include "Options.h"
 #include "my_structs.h"
 #include "dsp_param.h"
 #include "buf.h"
 #include <complex>
+#include <ctime>
+
+#include "sundries.h"
 using namespace std;
 //void bpf0(unsigned m,int mode,double t,complex<double> *x);
 
@@ -19,15 +22,15 @@ using namespace std;
 extern volatile PBsp_Status	status;
 extern int d_count;
 extern unsigned int k;
-extern AnsiString ProgPath;
-extern AnsiString ProgrammPath;
+extern string ProgPath;
+extern string ProgrammPath;
 extern BRD_Handle handle;
 extern int err;
-extern double tim;
+extern time_t tim;
 extern FILE *flog,*ff;
 extern int start; // запуск с FOrm4
 extern PARAM_DSP dsp_param, dsp_param_1;
-extern Uns  Daln_HM,Daln_MONO,sizeHM, sizeMONO;
+extern unsigned int  Daln_HM,Daln_MONO, sizeHM, sizeMONO;
 extern int size_HM,size_MONO;
 extern char ss[256];
 extern int z;
@@ -35,12 +38,12 @@ extern unsigned int size;
 //extern int mes[4],mes1[4];
 extern int *p11,*p21;
 extern char fname[256];
-extern U32 items;// Число записей программы ДДС
-extern U32 g_aProgArray[1000+8];// Массив для хранения программы ДДС
-extern U32 g_aProg[1000+8]; // Для проверки правильности ввода
+extern unsigned int items;// Число записей программы ДДС
+extern unsigned int g_aProgArray[1000+8];// Массив для хранения программы ДДС
+extern unsigned int g_aProg[1000+8]; // Для проверки правильности ввода
 
-extern complex<float> KU_HM_NU[N],KU_HM_VU[N],KU_MONO_NU[M],KU_MONO_VU[M];
-extern complex<float> KU_HM_NU_1[N];
+extern complex<float> KU_HM_NU[L_LEN],KU_HM_VU[L_LEN],KU_MONO_NU[M_LEN],KU_MONO_VU[M_LEN];
+extern complex<float> KU_HM_NU_1[L_LEN];
 extern complex<float> Filter_MTD[2*10*nK*Lmax],Filter_MTD1[2*10*nK*Lmax];
 extern complex<float> zz;
 extern int Period[10],Period1[10];
@@ -59,11 +62,11 @@ extern float sig;
 //nach_lo заменил на return 1;
 //konez заменил на return 2;
 //если все норма, то return 0;
-extern struct
+extern struct okno
 {
         float mnoj_okna;//,mno;
         int prop,L_Buf,n;
-}okno,oknom;
+} okno, oknom;
 struct
 {
         float mnoj_okna;//,mno;
@@ -100,7 +103,7 @@ int init_plata(void)
     //if(otobrajenie==0)
     for(k=0;k<5;k++)
     {
-        if(Ini_Start(ProgPath.c_str())!=0)
+        if(Ini_Start((char*) ProgPath.c_str())!=0)
         {
             BRD_reset(handle,0);
             BRD_reset(handle,1);
@@ -111,7 +114,7 @@ int init_plata(void)
                err=BRD_cleanup();
                chet_err++;
             }
-            tim=Now();
+						time(&tim);// =Now();
             fprintf(flog,"\n%-60s%s","Ошибки при инициализации платы ",DateTimeToStr(tim).c_str());
             fflush(flog);
 
@@ -192,14 +195,14 @@ int init_plata(void)
         sizeHM*=2;
     */
     size_HM&=0xfffffffc;
-    if(size_HM>N)//+k_test_hm1>N)
+    if(size_HM> L_LEN)//+k_test_hm1>N)
     {
-        sprintf(ss,"Дальность ЧМ слишком велика. Мах=%.0f",(N-k_test_hm1)/xx);
+        sprintf(ss,"Дальность ЧМ слишком велика. Мах=%.0f",(L_LEN - k_test_hm1)/xx);
         //MessageBox(NULL,ss,"Ошибка",MB_OK);
 
-        size_HM = N-k_test_hm1;
-        sprintf(ss,"Исправленная дальность ЧМ=%.0f",(N-k_test_hm1)/xx);
-        WritePrivateProfileString("Дальность","ЧМ",IntToStr(size_HM).c_str(),fini);
+        size_HM = L_LEN  - k_test_hm1;
+        sprintf(ss,"Исправленная дальность ЧМ=%.0f",(L_LEN - k_test_hm1)/xx);
+        WritePrivateProfileString("Дальность","ЧМ", std::to_string(size_HM).c_str() , fini);
         //MessageBox(NULL,ss,"Сообщение",MB_OK);
         fprintf(flog,"\n%s",ss);
 
@@ -242,18 +245,17 @@ int init_plata(void)
     sizeMONO=(sizeMONO+1)<<2;
     size_MONO=sizeMONO-dsp_param.zad_mono;     //Сигнал должен быть соответсвующей длительности
     size_MONO&=0xfffffffc;
-    if(size_MONO>M)//+k_test_mono1>M)
+    if(size_MONO>M_LEN)//+k_test_mono1>M)
     {
-        sprintf(ss,"Дальность МОНО слишком велика. Мах=%.0f",(M-k_test_mono1)/xxm);
+        sprintf(ss,"Дальность МОНО слишком велика. Мах=%.0f", (M_LEN -k_test_mono1)/xxm);
         //MessageBox(NULL,ss,"Error",MB_OK);
 
-        size_MONO = M-k_test_mono1;
-        z=(float)(M-k_test_mono1)/(float)xxm;
+        size_MONO = M_LEN - k_test_mono1;
+        z=(float)(M_LEN - k_test_mono1)/(float)xxm;
         sprintf(ss,"Исправленная дальность МОНО=%d",z);//(M-k_test_mono1)/xxm);
-        WritePrivateProfileString("Дальность","МОНО",IntToStr(z).c_str(),fini);
+        WritePrivateProfileString("Дальность","МОНО",std::to_string(z).c_str(),fini);
         //MessageBox(NULL,ss,"Сообщение",MB_OK);
         fprintf(flog,"\n%s",ss);
-
         //start=0;
         //goto konez;
     }
@@ -264,7 +266,7 @@ int init_plata(void)
     dsp_param.sizeMONO = sizeMONO;  // Кол отсчетов одного канала, принимаемых из ДДС
     dsp_param.size_MONO = size_MONO;
     //MessageBox(NULL,"Нажмите ОК","Message",MB_OK);
-    size=sizeof(mes);
+    size = sizeof(mes);
     //if(otobrajenie==1)
     //    return 0;
     for(int i=0;i<4;i++)
@@ -281,7 +283,7 @@ int init_plata(void)
         err=BRD_cleanup();
         while(!BRD_errcmp(err,BRDerr_OK))
                err=BRD_cleanup();
-        tim=Now();
+        time(&tim);;
         fprintf(flog,"\n%-60s%s","Ошибки при открытии линка на передачу ",DateTimeToStr(tim).c_str());
         fflush(flog);
         //FormData.flag_work_PK=0;
@@ -300,7 +302,7 @@ int init_plata(void)
         err=BRD_cleanup();
         while(!BRD_errcmp(err,BRDerr_OK))
                err=BRD_cleanup();
-        tim=Now();
+        time(&tim);;
         fprintf(flog,"\n%-60s%s","Ошибки при открытии линка на прием ",DateTimeToStr(tim).c_str());
         fflush(flog);
         //FormData.flag_work_PK=0;   // !!! ОШИБКА  Form1->Shape1->Brush->Color=clRed;
@@ -314,13 +316,13 @@ int init_plata(void)
         err=BRD_cleanup();
         while(!BRD_errcmp(err,BRDerr_OK))
                err=BRD_cleanup();
-        tim=Now();
+        time(&tim);;
         fprintf(flog,"\n%-60s%s","Ошибки при передаче сигнала готовности во 2 процессор ",DateTimeToStr(tim).c_str());
         fflush(flog);
         wwq++;
         if(wwq>=3)
         {
-                tim=Now();
+                time(&tim);;
                 fprintf(flog,"\nОшибки при передаче сигнала готовности во 2 процессор");
                 fprintf(flog,"\n%-60s%s","Перезагрузка ОС! ",DateTimeToStr(tim).c_str());
                 fflush(flog);
@@ -357,7 +359,7 @@ int init_plata(void)
         err=BRD_cleanup();
         while(!BRD_errcmp(err,BRDerr_OK))
                err=BRD_cleanup();
-        tim=Now();
+        time(&tim);;
         fprintf(flog,"\n%-60s%s","Ошибки при передаче параметров ДДС ",DateTimeToStr(tim).c_str());
         fflush(flog);
         //FormData.flag_work_PK=0;   // !!! ОШИБКА  Form1->Shape1->Brush->Color=clRed;
@@ -394,7 +396,7 @@ int init_plata(void)
         err=BRD_cleanup();
         while(!BRD_errcmp(err,BRDerr_OK))
                err=BRD_cleanup();
-        tim=Now();
+        time(&tim);;
         fprintf(flog,"\n%-60s%s","Ошибки при передаче программы ДДС ",DateTimeToStr(tim).c_str());
         fflush(flog);
         //FormData.flag_work_PK=0;   // !!! ОШИБКА  Form1->Shape1->Brush->Color=clRed;
@@ -428,7 +430,7 @@ int init_plata(void)
         err=BRD_cleanup();
         while(!BRD_errcmp(err,BRDerr_OK))
                err=BRD_cleanup();
-        tim=Now();
+        time(&tim);;
         fprintf(flog,"\n%-60s%s","Ошибки при передаче тестового сигнала ",DateTimeToStr(tim).c_str());
         fflush(flog);
         //FormData.flag_work_PK=0;   // !!! ОШИБКА  Form1->Shape1->Brush->Color=clRed;
@@ -458,7 +460,7 @@ int init_plata(void)
         err=BRD_cleanup();
         while(!BRD_errcmp(err,BRDerr_OK))
                err=BRD_cleanup();
-        tim=Now();
+        time(&tim);;
         fprintf(flog,"\n%-60s%s","Ошибки при передаче коэффициентов KU_HM_NU ",DateTimeToStr(tim).c_str());
         fflush(flog);
         //FormData.flag_work_PK=0;   // !!! ОШИБКА  Form1->Shape1->Brush->Color=clRed;
@@ -481,7 +483,7 @@ int init_plata(void)
         err=BRD_cleanup();
         while(!BRD_errcmp(err,BRDerr_OK))
                err=BRD_cleanup();
-        tim=Now();
+        time(&tim);
         fprintf(flog,"\n%-60s%s","Ошибки при передаче коэффициентов KU_HM_VU ",DateTimeToStr(tim).c_str());
         fflush(flog);
         //FormData.flag_work_PK=0;   // !!! ОШИБКА  Form1->Shape1->Brush->Color=clRed;
@@ -543,7 +545,7 @@ uy=fopen("filt.txt","w");
         err=BRD_cleanup();
         while(!BRD_errcmp(err,BRDerr_OK))
                err=BRD_cleanup();
-        tim=Now();
+        time(&tim);
         fprintf(flog,"\n%-60s%s","Ошибки при передаче коэффициентов KU_HM_NU ",DateTimeToStr(tim).c_str());
         fflush(flog);
         //FormData.flag_work_PK=0;   // !!! ОШИБКА  Form1->Shape1->Brush->Color=clRed;
@@ -567,7 +569,7 @@ uy=fopen("filt.txt","w");
         err=BRD_cleanup();
         while(!BRD_errcmp(err,BRDerr_OK))
                err=BRD_cleanup();
-        tim=Now();
+        time(&tim);
         fprintf(flog,"\n%-60s%s","Ошибки при передаче коэффициентов KU_MONO_VU ",DateTimeToStr(tim).c_str());
         fflush(flog);
         //FormData.flag_work_PK=0;   // !!! ОШИБКА  Form1->Shape1->Brush->Color=clRed;
@@ -592,7 +594,7 @@ uy=fopen("filt.txt","w");
         err=BRD_cleanup();
         while(!BRD_errcmp(err,BRDerr_OK))
                err=BRD_cleanup();
-        tim=Now();
+        time(&tim);
         fprintf(flog,"\n%-60s%s","Ошибки при передаче периодов повторения ",DateTimeToStr(tim).c_str());
         fflush(flog);
         //FormData.flag_work_PK=0;   // !!! ОШИБКА  Form1->Shape1->Brush->Color=clRed;
@@ -605,7 +607,7 @@ uy=fopen("filt.txt","w");
     BRD_getMsg(handle,0,&nT1 ,&size,TIME_OUT);
     if(nKK!=nT1)
     {
-        tim=Now();
+        time(&tim);
         fprintf(flog,"\n%-60s%s","Ошибки при передаче числа фильтров карты помех ",DateTimeToStr(tim).c_str());
         fflush(flog);
         return 1;
@@ -631,7 +633,7 @@ uy=fopen("filt.txt","w");
         err=BRD_cleanup();
         while(!BRD_errcmp(err,BRDerr_OK))
                err=BRD_cleanup();
-        tim=Now();
+        time(&tim);
         fprintf(flog,"\n%-60s%s","Ошибки при передаче коэффициентов передачи МТД ",DateTimeToStr(tim).c_str());
         fflush(flog);
         //FormData.flag_work_PK=0;   // !!! ОШИБКА  Form1->Shape1->Brush->Color=clRed;
@@ -656,7 +658,7 @@ uy=fopen("filt.txt","w");
         err=BRD_cleanup();
         while(!BRD_errcmp(err,BRDerr_OK))
                err=BRD_cleanup();
-        tim=Now();
+        time(&tim);
         fprintf(flog,"\n%-60s%s","Ошибки при передаче параметров окна обнаружения ",DateTimeToStr(tim).c_str());
         fflush(flog);
         //FormData.flag_work_PK=0;   // !!! ОШИБКА  Form1->Shape1->Brush->Color=clRed;
@@ -680,7 +682,7 @@ uy=fopen("filt.txt","w");
         err=BRD_cleanup();
         while(!BRD_errcmp(err,BRDerr_OK))
                err=BRD_cleanup();
-        tim=Now();
+        time(&tim);
         fprintf(flog,"\n%-60s%s","Ошибки при передаче параметров окна обнаружения МОНО",DateTimeToStr(tim).c_str());
         fflush(flog);
         //FormData.flag_work_PK=0;   // !!! ОШИБКА  Form1->Shape1->Brush->Color=clRed;
@@ -692,7 +694,7 @@ uy=fopen("filt.txt","w");
     BRD_getMsg(handle,0,&nT1 ,&size,TIME_OUT);
     if(tip_obr!=nT1)
     {
-        tim=Now();
+        time(&tim);
         fprintf(flog,"\n%-60s%s","Ошибки при передаче типа обработки ",DateTimeToStr(tim).c_str());
         fflush(flog);
         return 1;
@@ -706,7 +708,7 @@ uy=fopen("filt.txt","w");
     BRD_getMsg(handle,0,&nT1 ,&size,TIME_OUT);
     if(nKK!=nT1)
     {
-        tim=Now();
+        time(&tim);
         fprintf(flog,"\n%-60s%s","Ошибки при передаче числа фильтров карты помех ",DateTimeToStr(tim).c_str());
         fflush(flog);
         return 1;
@@ -719,7 +721,7 @@ uy=fopen("filt.txt","w");
     BRD_getMsg(handle,0,&nT1 ,&size,TIME_OUT);
     if(nT!=nT1)
     {
-        tim=Now();
+        time(&tim);
         fprintf(flog,"\n%-60s%s","Ошибки при передаче коэффициента децимации ",DateTimeToStr(tim).c_str());
         fflush(flog);
         return 1;
@@ -731,7 +733,7 @@ uy=fopen("filt.txt","w");
     BRD_getMsg(handle,0,&sig1 ,&size,TIME_OUT);
     if(sig!=sig1)
     {
-        tim=Now();
+        time(&tim);
         fprintf(flog,"\n%-60s%s","Ошибки при передаче мощности сигнала ",DateTimeToStr(tim).c_str());
         fflush(flog);
         return 1;
@@ -747,7 +749,7 @@ uy=fopen("filt.txt","w");
         err=BRD_cleanup();
         while(!BRD_errcmp(err,BRDerr_OK))
                err=BRD_cleanup();
-        tim=Now();
+        time(&tim);
         fprintf(flog,"\n%-60s%s","Ошибки открытия ДДС ",DateTimeToStr(tim).c_str());
         fflush(flog);
         //FormData.flag_work_PK=0;   // !!! ОШИБКА  Form1->Shape1->Brush->Color=clRed;
@@ -764,7 +766,7 @@ uy=fopen("filt.txt","w");
         err=BRD_cleanup();
         while(!BRD_errcmp(err,BRDerr_OK))
                err=BRD_cleanup();
-        tim=Now();
+        time(&tim);
         fprintf(flog,"\n%-60s%s","Ошибки открытия PIO ",DateTimeToStr(tim).c_str());
         fflush(flog);
         //FormData.flag_work_PK=0;   // !!! ОШИБКА  Form1->Shape1->Brush->Color=clRed;
@@ -779,7 +781,7 @@ uy=fopen("filt.txt","w");
 
     // включаем кнопки выбора комплекта
    // Form4->Button15->Enabled = true;
-    tim=Now();
+    time(&tim);
     fprintf(flog,"\n%-60s%s","Загрузка данных в процессоры закончена",DateTimeToStr(tim).c_str());
     fflush(flog);
     return 0;
